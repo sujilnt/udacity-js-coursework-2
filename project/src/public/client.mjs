@@ -1,4 +1,4 @@
-//import Immutable from "https://cdnjs.cloudflare.com/ajax/libs/immutable/4.0.0/immutable.min.js";
+import * as Immutable from "https://unpkg.com/immutable@4.0.0-rc.9/dist/immutable.es.js?module";
 
 let store = {
     user: { name: "Student" },
@@ -26,7 +26,6 @@ const App = (state) => {
     let { apod } = state
 
     return `
-        <header></header>
         <main class="mainContainer">
             ${Greeting(store.user.name)}
             <section>
@@ -89,7 +88,8 @@ function imageOfTheDay(apod){
 
 // Example API call
 const getImageOfTheDay = (store) => {
-    fetch(`http://localhost:3000/apod`)
+    console.log("immutable", Immutable);
+    /*fetch(`http://localhost:3000/apod`)
         .then((response)=> response.json())
-        .then((apod)=> updateStore(store, {apod}));
+        .then((apod)=> updateStore(store, {apod}));*/
 }
