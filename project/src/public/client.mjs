@@ -1,19 +1,21 @@
-import * as Immutable from "https://unpkg.com/immutable@4.0.0-rc.9/dist/immutable.es.js?module";
+import {Map, fromJS} from "https://unpkg.com/immutable@4.0.0-rc.9/dist/immutable.es.js?module";
 
-let store = {
+let initialState = fromJS({
     user: { name: "Student" },
     apod: '',
     rovers: ['Curiosity', 'Opportunity', 'Spirit'],
-}
+});
 
 // add our markup to the page
 const root = document.getElementById('root')
 
 const updateStore = (store, newState) => {
-    store = Object.assign({},store, newState);
-    render(root, store);
-
-    console.log("store",store);
+   try{
+       store = store.merge(newState);
+       render(root, store);
+   }catch (e) {
+       console.log("could  not update the state");
+   }
 }
 
 const render = async (root, state) => {
@@ -23,11 +25,11 @@ const render = async (root, state) => {
 
 // create content
 const App = (state) => {
-    let { apod } = state
+    const user = state.get("user");
 
     return `
         <main class="mainContainer">
-            ${Greeting(store.user.name)}
+            ${Greeting(user.get('name'))}
             <section>
                 <h3 class="heading3 pTag">Put things on the page!</h3>
                 <p class="pTag" style="margin-top: 20px;">
@@ -38,15 +40,19 @@ const App = (state) => {
                     explanation are returned. These keywords could be used as auto-generated hashtags for twitter or instagram feeds;
                     but generally help with discoverability of relevant imagery.
                 </p>
-                ${imageOfTheDay(apod)}
+                ${imageOfTheDay(state.get('apod'))}
             </section>
         </main>
     `
 }
 
+const format={
+    "video": "video",
+}
+
 // listening for load event because page should load before any JS is called
 window.addEventListener('load', () => {
-    render(root, store);
+    render(root, initialState).catch(error => console.error(error));
 })
 
 // ------------------------------------------------------  COMPONENTS
@@ -59,28 +65,31 @@ const Greeting = (name) => {
 
 // Example of a pure function that renders infomation requested from the backend
 function imageOfTheDay(apod){
-    const {date, explanation, hdurl,media_type,service_version,title,url } = apod;
+    const date = !!apod ? apod.get('date'): undefined;
+    const url = !!apod ? apod.get("url"): undefined;
 
     // If image does not already exist, or it is not from today -- request it again
-    const today = new Date()
-    if (!apod || date === today.getDate() ) {
-        getImageOfTheDay(store)
+    const today = new Date().getDate();
+    if (!apod || date === today ) {
+        getImageOfTheDay(initialState)
     }
 
     // check if the photo of the day is actually type video!
-    if (media_type === "video") {
+    if (apod.get("media_type") === format.video) {
         return (`
-            <p class="pTag">See today's featured video <a href="${url}">here</a></p>
-            <p class="pTag">${title}</p>
-            <p class="pTag">${explanation}</p>
-        `)
+            <p class="pTag">See today's featured video 
+                <a href="${url}">here</a><
+            /p>
+            <p class="pTag">${apod.get("title")}</p>
+            <p class="pTag">${apod.get("explanation")}</p>
+        `);
     } else {
         return (`
             <div class="container">
-                 <img src=${hdurl} class="image"  alt="nasa apod image "/>
-                <p class="pTag">${explanation}</p>
+                 <img src=${apod.get("hdurl")} class="image"  alt="nasa apod image "/>
+                <p class="pTag">${apod.get("explanation")}</p>
             </div>
-        `)
+        `);
     }
 }
 
@@ -88,8 +97,8 @@ function imageOfTheDay(apod){
 
 // Example API call
 const getImageOfTheDay = (store) => {
-    console.log("immutable", Immutable);
-    /*fetch(`http://localhost:3000/apod`)
+    fetch(`http://localhost:3000/apod`)
         .then((response)=> response.json())
-        .then((apod)=> updateStore(store, {apod}));*/
+        .then((apod)=> updateStore(store, Map({apod: Map(apod)})))
+        .catch(err => console.error(err));
 }
